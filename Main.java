@@ -8,7 +8,7 @@ import java.util.Scanner;
 public class Main {
     public static void main(String[] args) {
         AlertService alert = (product) -> {
-            System.out.println("4Restock Alert: " + product.getName() + 
+            System.out.println("Restock Alert: " + product.getName() + 
                                " is low on stock! Only " + product.getQuantity() + " left.");
         };
 
