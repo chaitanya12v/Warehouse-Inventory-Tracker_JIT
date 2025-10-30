@@ -39,4 +39,3 @@ public class Product {
                ", Quantity: " + quantity + ", Reorder Threshold: " + reorderThreshold;
     }
 }
-
