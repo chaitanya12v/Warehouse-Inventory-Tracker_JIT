@@ -29,33 +29,43 @@ public class Main {
 
             switch (choice) {
                 case 1:
+                    
                     System.out.print("Enter Product ID: ");
-                    String id = sc.next().trim();
+                    String id = sc.nextLine().trim();
 
                     System.out.print("Enter Product Name: ");
-                    String name = sc.next().trim();
+                    String name = sc.nextLine().trim();
 
+                    System.out.print("Enter Initial Quantity: ");
                     int qty = getPositiveInt(sc, "initial quantity");
+
+                    System.out.print("Enter Reorder Threshold: ");
                     int threshold = getPositiveInt(sc, "reorder threshold");
 
                     warehouse.addProduct(new Product(id, name, qty, threshold));
-                    System.out.println("Product added successfully.");
+                   
                     break;
 
                 case 2:
+                    sc.nextLine();
                     System.out.print("Enter Product ID: ");
-                    id = sc.next().trim();
+                    id = sc.nextLine().trim();
 
+                    System.out.print("Enter Shipment Quantity: ");
                     qty = getPositiveInt(sc, "shipment quantity");
+
                     warehouse.receiveShipment(id, qty);
                     System.out.println("Shipment received successfully.");
                     break;
 
                 case 3:
+                    sc.nextLine();
                     System.out.print("Enter Product ID: ");
-                    id = sc.next().trim();
+                    id = sc.nextLine().trim();
 
+                    System.out.print("Enter Order Quantity: ");
                     qty = getPositiveInt(sc, "order quantity");
+
                     warehouse.fulfillOrder(id, qty);
                     System.out.println("Order processed successfully.");
                     break;
@@ -80,10 +90,9 @@ public class Main {
     private static int getSafeInt(Scanner sc, String fieldName) {
         while (true) {
             try {
-                return sc.nextInt();
-            } catch (InputMismatchException e) {
+                return Integer.parseInt(sc.nextLine().trim());
+            } catch (NumberFormatException e) {
                 System.out.print("Invalid input for " + fieldName + ". Please enter a valid number: ");
-                sc.nextLine();
             }
         }
     }
