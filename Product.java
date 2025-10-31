@@ -1,52 +1,44 @@
-import java.io.Serializable;
-import java.util.*;
+package model;
 
-public class Product implements Serializable {
-    private int productId;
-    private String productName;
+public class Product {
+    private String productId;
+    private String name;
     private int quantity;
-    private int threshold;
+    private int reorderThreshold;
 
-    public Product(int productId, String productName, int quantity, int threshold) {
+    public Product(String productId, String name, int quantity, int reorderThreshold) {
         this.productId = productId;
-        this.productName = productName;
+        this.name = name;
         this.quantity = quantity;
-        this.threshold = threshold;
+        this.reorderThreshold = reorderThreshold;
     }
 
-    public int getProductId() {
+    public String getProductId() {
         return productId;
     }
 
-    public String getProductName() {
-        return productName;
+    public String getName() {
+        return name;
     }
 
     public int getQuantity() {
         return quantity;
     }
 
-    public int getThreshold() {
-        return threshold;
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
     }
 
-    public synchronized void increaseQuantity(int qty) {
-        quantity += qty;
-    }
-
-    public synchronized void decreaseQuantity(int qty) {
-        if (qty <= quantity) {
-            quantity -= qty;
-        } else {
-            System.out.println("Not enough stock available for " + productName);
-        }
+    public int getReorderThreshold() {
+        return reorderThreshold;
     }
 
     public boolean isLowStock() {
-        return quantity <= threshold;
+        return quantity <= reorderThreshold;
     }
 
+    @Override
     public String toString() {
-        return productId + " - " + productName + " | Qty: " + quantity + " | Threshold: " + threshold;
+        return productId + " - " + name + " | Qty: " + quantity + " | Threshold: " + reorderThreshold;
     }
 }
