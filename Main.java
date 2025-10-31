@@ -1,182 +1,134 @@
-import java.io.*;
+package main;
+
+import model.Product;
+import service.Warehouse;
+import service.AlertService;
 import java.util.*;
 
-
-class AlertService implements StockObserver {
-
-    public void onLowStock(Product product) {
-        System.out.println("ALERT: Low stock for " + product.getProductName() +
-                " — only " + product.getQuantity() + " left!");
-    }
-}
-
-
-class FileHandler {
-    private static final String FILE_NAME = "data.txt";
-
-    
-    public static void saveData(List<Warehouse> warehouses) {
-        try (PrintWriter writer = new PrintWriter(FILE_NAME)) {
-            for (Warehouse w : warehouses) {
-                writer.println("==================================");
-                writer.println("Warehouse: " + w.getWarehouseName());
-                writer.println("==================================");
-
-                List<Product> products = w.getProducts();
-                if (products.isEmpty()) {
-                    writer.println("No products available in this warehouse.\n");
-                } else {
-                    for (Product p : products) {
-                        writer.println("Product ID: " + p.getProductId());
-                        writer.println("Product Name: " + p.getProductName());
-                        writer.println("Quantity: " + p.getQuantity());
-                        writer.println("Threshold: " + p.getThreshold());
-                        writer.println("----------------------------------");
-                    }
-                }
-                writer.println();
-            }
-            System.out.println(" Readable data saved successfully in " + FILE_NAME);
-        } catch (IOException e) {
-            System.out.println("Error saving readable data: " + e.getMessage());
-        }
-    }
-
-    // Load serialized data from file
-    public static List<Warehouse> loadData() {
-        List<Warehouse> warehouses = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
-            String line;
-            Warehouse currentWarehouse = null;
-            while ((line = reader.readLine()) != null) {
-                if (line.startsWith("Warehouse:")) {
-                    String name = line.substring(line.indexOf(":") + 1).trim();
-                    currentWarehouse = new Warehouse(name);
-                    warehouses.add(currentWarehouse);
-                } else if (line.startsWith("Product ID:")) {
-                    int id = Integer.parseInt(line.substring(line.indexOf(":") + 1).trim());
-                    String name = reader.readLine().split(":")[1].trim();
-                    int qty = Integer.parseInt(reader.readLine().split(":")[1].trim());
-                    int th = Integer.parseInt(reader.readLine().split(":")[1].trim());
-                    Product p = new Product(id, name, qty, th);
-                    if (currentWarehouse != null) {
-                        currentWarehouse.addProduct(p);
-                    }
-                    reader.readLine(); 
-                }
-            }
-            System.out.println("Readable data loaded successfully from " + FILE_NAME);
-        } catch (IOException e) {
-            System.out.println("Error reading readable data: " + e.getMessage());
-        }
-        return warehouses;
-    }
-
-}
-
-// this is main class
 public class Main {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
-        List<Warehouse> warehouses = FileHandler.loadData();
-        AlertService alertService = new AlertService();
+        AlertService alert = p -> System.out.println("Low stock alert: " + p.getName() + " | Qty: " + p.getQuantity());
+
+        Map<String, Warehouse> warehouses = new HashMap<>();
 
         while (true) {
-            System.out.println("\n==============================");
-            System.out.println("  WAREHOUSE INVENTORY TRACKER");
-            System.out.println("==============================");
-            System.out.println("1. Add Warehouse");
-            System.out.println("2. Add Product");
-            System.out.println("3. Receive Shipment (Threaded)");
-            System.out.println("4. Fulfill Order (Threaded)");
-            System.out.println("5. View Inventory");
-            System.out.println("6. Exit");
-            System.out.print(" Enter your choice: ");
-            int choice = sc.nextInt();
-            sc.nextLine();
+            System.out.println("\n===== INVENTORY MANAGEMENT =====");
+            System.out.println("1. Create Warehouse");
+            System.out.println("2. Select Warehouse");
+            System.out.println("3. View All Warehouses");
+            System.out.println("4. Exit");
+            System.out.print("Enter choice: ");
+            int choice = getSafeInt(sc);
 
             switch (choice) {
-                case 1 -> {
-                    System.out.print("Enter warehouse name: ");
-                    String wName = sc.nextLine();
-                    Warehouse w = new Warehouse(wName);
-                    w.addObserver(alertService);
-                    warehouses.add(w);
-                    System.out.println("Warehouse added successfully!");
-                }
-
-                case 2 -> {
-                    Warehouse w = selectWarehouse(warehouses, sc);
-                    if (w != null) {
-                        System.out.print("Enter product ID: ");
-                        int id = sc.nextInt();
-                        sc.nextLine();
-                        System.out.print("Enter product name: ");
-                        String name = sc.nextLine();
-                        System.out.print("Enter quantity: ");
-                        int qty = sc.nextInt();
-                        System.out.print("Enter threshold: ");
-                        int th = sc.nextInt();
-                        w.addProduct(new Product(id, name, qty, th));
+                case 1:
+                    System.out.print("Enter Warehouse Name: ");
+                    String name = sc.next().trim();
+                    if (warehouses.containsKey(name)) {
+                        System.out.println("Warehouse already exists");
+                    } else {
+                        warehouses.put(name, new Warehouse(name, alert));
+                        System.out.println("Warehouse created: " + name);
                     }
-                }
+                    break;
 
-                case 3 -> {
-                    Warehouse w = selectWarehouse(warehouses, sc);
-                    if (w != null) {
-                        System.out.print("Enter product ID: ");
-                        int id = sc.nextInt();
-                        System.out.print("Enter shipment quantity: ");
-                        int qty = sc.nextInt();
-                        w.receiveShipment(id, qty);
+                case 2:
+                    if (warehouses.isEmpty()) {
+                        System.out.println("No warehouses created yet");
+                        break;
                     }
-                }
-
-                case 4 -> {
-                    Warehouse w = selectWarehouse(warehouses, sc);
-                    if (w != null) {
-                        System.out.print("Enter product ID: ");
-                        int id = sc.nextInt();
-                        System.out.print("Enter order quantity: ");
-                        int qty = sc.nextInt();
-                        w.fulfillOrder(id, qty);
+                    System.out.print("Enter Warehouse Name: ");
+                    String select = sc.next().trim();
+                    Warehouse w = warehouses.get(select);
+                    if (w == null) {
+                        System.out.println("Warehouse not found");
+                    } else {
+                        warehouseMenu(sc, w);
                     }
-                }
+                    break;
 
-                case 5 -> {
-                    for (Warehouse w : warehouses) {
-                        w.viewProducts();
+                case 3:
+                    if (warehouses.isEmpty()) {
+                        System.out.println("No warehouses available");
+                    } else {
+                        System.out.println("\nWarehouses:");
+                        for (String wh : warehouses.keySet()) System.out.println("- " + wh);
                     }
-                }
+                    break;
 
-                case 6 -> {
-                    FileHandler.saveData(warehouses);
-                    System.out.println(" Data saved to data.txt");
-                    System.out.println(" Exiting...");
+                case 4:
+                    System.out.println("Exiting...");
+                    sc.close();
                     return;
-                }
 
-                default -> System.out.println("Invalid choice! Try again.");
+                default:
+                    System.out.println("Invalid choice");
             }
         }
     }
 
-    private static Warehouse selectWarehouse(List<Warehouse> warehouses, Scanner sc) {
-        if (warehouses.isEmpty()) {
-            System.out.println("No warehouses available!");
-            return null;
+    private static void warehouseMenu(Scanner sc, Warehouse w) {
+        while (true) {
+            System.out.println("\n--- " + w.getName() + " Menu ---");
+            System.out.println("1. Add Product");
+            System.out.println("2. Receive Shipment");
+            System.out.println("3. Fulfill Order");
+            System.out.println("4. View Inventory");
+            System.out.println("5. Back");
+            System.out.print("Enter choice: ");
+            int ch = getSafeInt(sc);
+
+            switch (ch) {
+                case 1:
+                    System.out.print("Enter Product ID: ");
+                    String id = sc.next().trim();
+                    System.out.print("Enter Name: ");
+                    String pname = sc.next().trim();
+                    System.out.print("Enter Quantity: ");
+                    int q = getSafeInt(sc);
+                    System.out.print("Enter Reorder Threshold: ");
+                    int t = getSafeInt(sc);
+                    w.addProduct(new Product(id, pname, q, t));
+                    break;
+
+                case 2:
+                    System.out.print("Enter Product ID: ");
+                    id = sc.next().trim();
+                    System.out.print("Enter Shipment Quantity: ");
+                    q = getSafeInt(sc);
+                    w.receiveShipment(id, q);
+                    break;
+
+                case 3:
+                    System.out.print("Enter Product ID: ");
+                    id = sc.next().trim();
+                    System.out.print("Enter Order Quantity: ");
+                    q = getSafeInt(sc);
+                    w.fulfillOrder(id, q);
+                    break;
+
+                case 4:
+                    w.viewInventory();
+                    break;
+
+                case 5:
+                    return;
+
+                default:
+                    System.out.println("Invalid choice");
+            }
         }
-        System.out.println("\n Available Warehouses:");
-        for (int i = 0; i < warehouses.size(); i++) {
-            System.out.println((i + 1) + ". " + warehouses.get(i).getWarehouseName());
-        }
-        System.out.print("Select warehouse number: ");
-        int index = sc.nextInt() - 1;
-        if (index >= 0 && index < warehouses.size()) {
-            return warehouses.get(index);
-        } else {
-            System.out.println("Invalid selection!");
-            return null;
+    }
+
+    private static int getSafeInt(Scanner sc) {
+        while (true) {
+            try {
+                return sc.nextInt();
+            } catch (InputMismatchException e) {
+                sc.nextLine();
+                System.out.print("Enter a valid number: ");
+            }
         }
     }
 }
